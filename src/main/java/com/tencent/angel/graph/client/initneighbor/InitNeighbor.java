@@ -1,4 +1,4 @@
-package com.tencent.angel.graph.client.initNeighbor;
+package com.tencent.angel.graph.client.initneighbor;
 
 import com.tencent.angel.graph.data.Node;
 import com.tencent.angel.ml.matrix.psf.update.base.PartitionUpdateParam;

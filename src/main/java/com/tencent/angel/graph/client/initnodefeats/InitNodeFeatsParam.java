@@ -1,8 +1,9 @@
-package com.tencent.angel.graph.client.initNeighbor;
+package com.tencent.angel.graph.client.initnodefeats;
 
 import com.tencent.angel.PartitionKey;
 import com.tencent.angel.exception.AngelException;
 import com.tencent.angel.graph.util.LongIndexComparator;
+import com.tencent.angel.ml.math2.vector.IntFloatVector;
 import com.tencent.angel.ml.matrix.psf.update.base.PartitionUpdateParam;
 import com.tencent.angel.ml.matrix.psf.update.base.UpdateParam;
 import com.tencent.angel.psagent.PSAgentContext;
@@ -12,48 +13,36 @@ import it.unimi.dsi.fastutil.ints.IntArrays;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InitNeighborParam extends UpdateParam {
+public class InitNodeFeatsParam extends UpdateParam {
+	private final long[] keys;
+	private final IntFloatVector[] feats;
+	private final int startIndex;
+	private final int endIndex;
 
-	private long[] keys;
-	private int[] indptr;
-	private long[] neighbors;
-	private int[] types;
-	private float[] weights;
-	private int start;
-	private int end;
-
-	public InitNeighborParam(int matrixId, long[] keys,
-							 int[] indptr, long[] neighbors) {
-		this(matrixId, keys, indptr, neighbors, 0, keys.length);
-	}
-
-	public InitNeighborParam(int matrixId, long[] keys,
-							 int[] indptr, long[] neighbors,
-							 int start, int end) {
-		this(matrixId, keys, indptr, neighbors, null, null, start, end);
-	}
-
-	public InitNeighborParam(int matrixId, long[] keys,
-							 int[] indptr, long[] neighbors,
-							 int[] types, float[] weights,
-							 int start, int end) {
+	public InitNodeFeatsParam(int matrixId, long[] keys, IntFloatVector[] feats, int start, int end) {
 		super(matrixId);
 		this.keys = keys;
-		this.indptr = indptr;
-		this.neighbors = neighbors;
-		this.types = types;
-		this.weights = weights;
-		this.start = start;
-		this.end = end;
+		this.feats = feats;
+		this.startIndex = start;
+		this.endIndex = end;
+		assert (keys.length == feats.length);
+	}
+
+	public InitNodeFeatsParam(int matrixId, long[] keys, IntFloatVector[] feats) {
+		super(matrixId);
+		this.keys = keys;
+		this.feats = feats;
+		this.startIndex = 0;
+		this.endIndex = keys.length;
 	}
 
 	@Override
 	public List<PartitionUpdateParam> split() {
 		LongIndexComparator comparator = new LongIndexComparator(keys);
-		int size = end - start;
+		int size = endIndex - startIndex;
 		int[] index = new int[size];
 		for (int i = 0; i < size; i++)
-			index[i] = i + start;
+			index[i] = i + startIndex;
 		IntArrays.quickSort(index, comparator);
 
 		List<PartitionUpdateParam> params = new ArrayList<>();
@@ -65,24 +54,26 @@ public class InitNeighborParam extends UpdateParam {
 							.get(parts.size() - 1).getEndCol());
 		}
 
-		int nodeIndex = start;
+		int nodeIndex = startIndex;
 		int partIndex = 0;
-		while (nodeIndex < end || partIndex < parts.size()) {
+		while (nodeIndex < endIndex || partIndex < parts.size()) {
 			int length = 0;
 			long endOffset = parts.get(partIndex).getEndCol();
-			while (nodeIndex < end && keys[index[nodeIndex - start]] < endOffset) {
+			while (nodeIndex < endIndex && keys[index[nodeIndex - startIndex]] < endOffset) {
 				nodeIndex++;
 				length++;
 			}
 
 			if (length > 0)
-				params.add(new InitNeighborPartParam(matrixId,
-						parts.get(partIndex), keys, index, indptr, neighbors, types, weights,
-						nodeIndex - length - start, nodeIndex - start));
+				params.add(new InitNodeFeatsPartParam(matrixId,
+						parts.get(partIndex), keys, feats, index,
+						nodeIndex - length - startIndex,
+						nodeIndex - startIndex));
 
 			partIndex++;
 		}
 
 		return params;
 	}
+
 }
