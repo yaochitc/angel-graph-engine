@@ -15,23 +15,23 @@ public class Node implements IElement {
 
 	private IntFloatVector feats;
 
-	private float weight;
 	private long[] neighbors;
 	private int[] edgeTypes;
+	private float[] edgeWeights;
 
 	public Node(IntFloatVector feats, long[] neighbors) {
-		this(1.0f, feats, neighbors, null);
+		this(feats, neighbors, null, null);
 	}
 
-	public Node(float weight, IntFloatVector feats, long[] neighbors, int[] edgeTypes) {
-		this.weight = weight;
+	public Node(IntFloatVector feats, long[] neighbors, int[] edgeTypes, float[] edgeWeights) {
 		this.feats = feats;
 		this.neighbors = neighbors;
 		this.edgeTypes = edgeTypes;
+		this.edgeWeights = edgeWeights;
 	}
 
 	public Node() {
-		this(0f, null, null, null);
+		this(null, null, null, null);
 	}
 
 	public IntFloatVector getFeats() {
@@ -40,14 +40,6 @@ public class Node implements IElement {
 
 	public void setFeats(IntFloatVector feats) {
 		this.feats = feats;
-	}
-
-	public float getWeight() {
-		return weight;
-	}
-
-	public void setWeight(float weight) {
-		this.weight = weight;
 	}
 
 	public long[] getNeighbors() {
@@ -66,6 +58,14 @@ public class Node implements IElement {
 		this.edgeTypes = edgeTypes;
 	}
 
+	public float[] getEdgeWeights() {
+		return edgeWeights;
+	}
+
+	public void setEdgeWeights(float[] edgeWeights) {
+		this.edgeWeights = edgeWeights;
+	}
+
 	@Override
 	public Node deepClone() {
 		IntFloatVector cloneFeats = feats.clone();
@@ -73,20 +73,23 @@ public class Node implements IElement {
 		long[] cloneNeighbors = new long[neighbors.length];
 		System.arraycopy(neighbors, 0, cloneNeighbors, 0, neighbors.length);
 
-		if (edgeTypes == null)
-			return new Node(weight, cloneFeats, cloneNeighbors, null);
-		else {
-			int[] cloneEdgeTypes = new int[edgeTypes.length];
+		int[] cloneEdgeTypes = null;
+		if (edgeTypes != null) {
+			cloneEdgeTypes = new int[edgeTypes.length];
 			System.arraycopy(edgeTypes, 0, cloneEdgeTypes, 0, edgeTypes.length);
-			return new Node(weight, cloneFeats, cloneNeighbors, cloneEdgeTypes);
 		}
+
+		float[] cloneEdgeWeights = null;
+		if (edgeWeights != null) {
+			cloneEdgeWeights = new float[edgeWeights.length];
+			System.arraycopy(edgeWeights, 0, cloneEdgeWeights, 0, edgeWeights.length);
+		}
+		return new Node(cloneFeats, cloneNeighbors, cloneEdgeTypes, cloneEdgeWeights);
 	}
 
 	@Override
 	public void serialize(ByteBuf output) {
 		NodeUtils.serialize(feats, output);
-
-		output.writeFloat(weight);
 
 		output.writeInt(neighbors.length);
 		for (int i = 0; i < neighbors.length; i++)
@@ -96,6 +99,12 @@ public class Node implements IElement {
 			output.writeInt(edgeTypes.length);
 			for (int i = 0; i < edgeTypes.length; i++)
 				output.writeInt(edgeTypes[i]);
+		}
+
+		if (edgeWeights != null) {
+			output.writeInt(edgeWeights.length);
+			for (int i = 0; i < edgeWeights.length; i++)
+				output.writeFloat(edgeWeights[i]);
 		}
 	}
 
@@ -103,8 +112,6 @@ public class Node implements IElement {
 	public void deserialize(ByteBuf input) {
 		feats = NodeUtils.deserialize(input);
 
-		weight = input.readFloat();
-
 		int len = input.readInt();
 		neighbors = new long[len];
 		for (int i = 0; i < len; i++)
@@ -116,23 +123,29 @@ public class Node implements IElement {
 			for (int i = 0; i < len; i++)
 				edgeTypes[i] = input.readInt();
 		}
+
+		if (edgeWeights != null) {
+			len = input.readInt();
+			edgeWeights = new float[len];
+			for (int i = 0; i < len; i++)
+				edgeWeights[i] = input.readFloat();
+		}
 	}
 
 	@Override
 	public int bufferLen() {
 		int len = NodeUtils.dataLen(feats);
-		len += 4;
 		len += 4 + 8 * neighbors.length;
 		if (edgeTypes != null)
 			len += 4 + 4 * edgeTypes.length;
+		if (edgeWeights != null)
+			len += 4 + 4 * edgeWeights.length;
 		return len;
 	}
 
 	@Override
 	public void serialize(DataOutputStream output) throws IOException {
 		NodeUtils.serialize(feats, output);
-
-		output.writeFloat(weight);
 
 		output.writeInt(neighbors.length);
 		for (int i = 0; i < neighbors.length; i++)
@@ -143,13 +156,17 @@ public class Node implements IElement {
 			for (int i = 0; i < edgeTypes.length; i++)
 				output.writeInt(edgeTypes[i]);
 		}
+
+		if (edgeWeights != null) {
+			output.writeInt(edgeWeights.length);
+			for (int i = 0; i < edgeWeights.length; i++)
+				output.writeFloat(edgeWeights[i]);
+		}
 	}
 
 	@Override
 	public void deserialize(DataInputStream input) throws IOException {
 		feats = NodeUtils.deserialize(input);
-
-		weight = input.readFloat();
 
 		int len = input.readInt();
 		neighbors = new long[len];
@@ -161,6 +178,13 @@ public class Node implements IElement {
 			edgeTypes = new int[len];
 			for (int i = 0; i < len; i++)
 				edgeTypes[i] = input.readInt();
+		}
+
+		if (edgeWeights != null) {
+			len = input.readInt();
+			edgeWeights = new float[len];
+			for (int i = 0; i < len; i++)
+				edgeWeights[i] = input.readFloat();
 		}
 	}
 
