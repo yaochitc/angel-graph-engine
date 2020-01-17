@@ -16,18 +16,18 @@ public class Node implements IElement {
 	private IntFloatVector feats;
 
 	private long[] neighbors;
-	private int[] edgeTypes;
-	private float[] edgeWeights;
+	private int[] types;
+	private float[] weights;
 
 	public Node(IntFloatVector feats, long[] neighbors) {
 		this(feats, neighbors, null, null);
 	}
 
-	public Node(IntFloatVector feats, long[] neighbors, int[] edgeTypes, float[] edgeWeights) {
+	public Node(IntFloatVector feats, long[] neighbors, int[] types, float[] weights) {
 		this.feats = feats;
 		this.neighbors = neighbors;
-		this.edgeTypes = edgeTypes;
-		this.edgeWeights = edgeWeights;
+		this.types = types;
+		this.weights = weights;
 	}
 
 	public Node() {
@@ -50,20 +50,20 @@ public class Node implements IElement {
 		this.neighbors = neighbors;
 	}
 
-	public int[] getEdgeTypes() {
-		return edgeTypes;
+	public int[] getTypes() {
+		return types;
 	}
 
-	public void setEdgeTypes(int[] edgeTypes) {
-		this.edgeTypes = edgeTypes;
+	public void setTypes(int[] types) {
+		this.types = types;
 	}
 
-	public float[] getEdgeWeights() {
-		return edgeWeights;
+	public float[] getWeights() {
+		return weights;
 	}
 
-	public void setEdgeWeights(float[] edgeWeights) {
-		this.edgeWeights = edgeWeights;
+	public void setWeights(float[] weights) {
+		this.weights = weights;
 	}
 
 	@Override
@@ -73,18 +73,18 @@ public class Node implements IElement {
 		long[] cloneNeighbors = new long[neighbors.length];
 		System.arraycopy(neighbors, 0, cloneNeighbors, 0, neighbors.length);
 
-		int[] cloneEdgeTypes = null;
-		if (edgeTypes != null) {
-			cloneEdgeTypes = new int[edgeTypes.length];
-			System.arraycopy(edgeTypes, 0, cloneEdgeTypes, 0, edgeTypes.length);
+		int[] cloneTypes = null;
+		if (types != null) {
+			cloneTypes = new int[types.length];
+			System.arraycopy(types, 0, cloneTypes, 0, types.length);
 		}
 
-		float[] cloneEdgeWeights = null;
-		if (edgeWeights != null) {
-			cloneEdgeWeights = new float[edgeWeights.length];
-			System.arraycopy(edgeWeights, 0, cloneEdgeWeights, 0, edgeWeights.length);
+		float[] cloneWeights = null;
+		if (weights != null) {
+			cloneWeights = new float[weights.length];
+			System.arraycopy(weights, 0, cloneWeights, 0, weights.length);
 		}
-		return new Node(cloneFeats, cloneNeighbors, cloneEdgeTypes, cloneEdgeWeights);
+		return new Node(cloneFeats, cloneNeighbors, cloneTypes, cloneWeights);
 	}
 
 	@Override
@@ -95,16 +95,16 @@ public class Node implements IElement {
 		for (int i = 0; i < neighbors.length; i++)
 			output.writeLong(neighbors[i]);
 
-		if (edgeTypes != null) {
-			output.writeInt(edgeTypes.length);
-			for (int i = 0; i < edgeTypes.length; i++)
-				output.writeInt(edgeTypes[i]);
+		if (types != null) {
+			output.writeInt(types.length);
+			for (int i = 0; i < types.length; i++)
+				output.writeInt(types[i]);
 		}
 
-		if (edgeWeights != null) {
-			output.writeInt(edgeWeights.length);
-			for (int i = 0; i < edgeWeights.length; i++)
-				output.writeFloat(edgeWeights[i]);
+		if (weights != null) {
+			output.writeInt(weights.length);
+			for (int i = 0; i < weights.length; i++)
+				output.writeFloat(weights[i]);
 		}
 	}
 
@@ -117,18 +117,18 @@ public class Node implements IElement {
 		for (int i = 0; i < len; i++)
 			neighbors[i] = input.readLong();
 
-		if (edgeTypes != null) {
+		if (types != null) {
 			len = input.readInt();
-			edgeTypes = new int[len];
+			types = new int[len];
 			for (int i = 0; i < len; i++)
-				edgeTypes[i] = input.readInt();
+				types[i] = input.readInt();
 		}
 
-		if (edgeWeights != null) {
+		if (weights != null) {
 			len = input.readInt();
-			edgeWeights = new float[len];
+			weights = new float[len];
 			for (int i = 0; i < len; i++)
-				edgeWeights[i] = input.readFloat();
+				weights[i] = input.readFloat();
 		}
 	}
 
@@ -136,10 +136,10 @@ public class Node implements IElement {
 	public int bufferLen() {
 		int len = NodeUtils.dataLen(feats);
 		len += 4 + 8 * neighbors.length;
-		if (edgeTypes != null)
-			len += 4 + 4 * edgeTypes.length;
-		if (edgeWeights != null)
-			len += 4 + 4 * edgeWeights.length;
+		if (types != null)
+			len += 4 + 4 * types.length;
+		if (weights != null)
+			len += 4 + 4 * weights.length;
 		return len;
 	}
 
@@ -151,16 +151,16 @@ public class Node implements IElement {
 		for (int i = 0; i < neighbors.length; i++)
 			output.writeLong(neighbors[i]);
 
-		if (edgeTypes != null) {
-			output.writeInt(edgeTypes.length);
-			for (int i = 0; i < edgeTypes.length; i++)
-				output.writeInt(edgeTypes[i]);
+		if (types != null) {
+			output.writeInt(types.length);
+			for (int i = 0; i < types.length; i++)
+				output.writeInt(types[i]);
 		}
 
-		if (edgeWeights != null) {
-			output.writeInt(edgeWeights.length);
-			for (int i = 0; i < edgeWeights.length; i++)
-				output.writeFloat(edgeWeights[i]);
+		if (weights != null) {
+			output.writeInt(weights.length);
+			for (int i = 0; i < weights.length; i++)
+				output.writeFloat(weights[i]);
 		}
 	}
 
@@ -173,18 +173,18 @@ public class Node implements IElement {
 		for (int i = 0; i < len; i++)
 			neighbors[i] = input.readLong();
 
-		if (edgeTypes != null) {
+		if (types != null) {
 			len = input.readInt();
-			edgeTypes = new int[len];
+			types = new int[len];
 			for (int i = 0; i < len; i++)
-				edgeTypes[i] = input.readInt();
+				types[i] = input.readInt();
 		}
 
-		if (edgeWeights != null) {
+		if (weights != null) {
 			len = input.readInt();
-			edgeWeights = new float[len];
+			weights = new float[len];
 			for (int i = 0; i < len; i++)
-				edgeWeights[i] = input.readFloat();
+				weights[i] = input.readFloat();
 		}
 	}
 
