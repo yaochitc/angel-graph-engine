@@ -95,13 +95,17 @@ public class Node implements IElement {
 		for (int i = 0; i < neighbors.length; i++)
 			output.writeLong(neighbors[i]);
 
-		if (types != null) {
+		if (types == null) {
+			output.writeInt(0);
+		} else {
 			output.writeInt(types.length);
 			for (int i = 0; i < types.length; i++)
 				output.writeInt(types[i]);
 		}
 
-		if (weights != null) {
+		if (weights == null) {
+			output.writeInt(0);
+		} else {
 			output.writeInt(weights.length);
 			for (int i = 0; i < weights.length; i++)
 				output.writeFloat(weights[i]);
@@ -117,29 +121,25 @@ public class Node implements IElement {
 		for (int i = 0; i < len; i++)
 			neighbors[i] = input.readLong();
 
-		if (types != null) {
-			len = input.readInt();
-			types = new int[len];
-			for (int i = 0; i < len; i++)
-				types[i] = input.readInt();
-		}
+		len = input.readInt();
+		types = new int[len];
+		for (int i = 0; i < len; i++)
+			types[i] = input.readInt();
 
-		if (weights != null) {
-			len = input.readInt();
-			weights = new float[len];
-			for (int i = 0; i < len; i++)
-				weights[i] = input.readFloat();
-		}
+		len = input.readInt();
+		weights = new float[len];
+		for (int i = 0; i < len; i++)
+			weights[i] = input.readFloat();
 	}
 
 	@Override
 	public int bufferLen() {
 		int len = NodeUtils.dataLen(feats);
-		len += 4 + 8 * neighbors.length;
+		len += 4 + 8 * neighbors.length + 4 + 4;
 		if (types != null)
-			len += 4 + 4 * types.length;
+			len += 4 * types.length;
 		if (weights != null)
-			len += 4 + 4 * weights.length;
+			len += 4 * weights.length;
 		return len;
 	}
 
@@ -151,13 +151,17 @@ public class Node implements IElement {
 		for (int i = 0; i < neighbors.length; i++)
 			output.writeLong(neighbors[i]);
 
-		if (types != null) {
+		if (types == null) {
+			output.writeInt(0);
+		} else {
 			output.writeInt(types.length);
 			for (int i = 0; i < types.length; i++)
 				output.writeInt(types[i]);
 		}
 
-		if (weights != null) {
+		if (weights == null) {
+			output.writeInt(0);
+		} else {
 			output.writeInt(weights.length);
 			for (int i = 0; i < weights.length; i++)
 				output.writeFloat(weights[i]);
@@ -173,19 +177,15 @@ public class Node implements IElement {
 		for (int i = 0; i < len; i++)
 			neighbors[i] = input.readLong();
 
-		if (types != null) {
-			len = input.readInt();
-			types = new int[len];
-			for (int i = 0; i < len; i++)
-				types[i] = input.readInt();
-		}
+		len = input.readInt();
+		types = new int[len];
+		for (int i = 0; i < len; i++)
+			types[i] = input.readInt();
 
-		if (weights != null) {
-			len = input.readInt();
-			weights = new float[len];
-			for (int i = 0; i < len; i++)
-				weights[i] = input.readFloat();
-		}
+		len = input.readInt();
+		weights = new float[len];
+		for (int i = 0; i < len; i++)
+			weights[i] = input.readFloat();
 	}
 
 	@Override
