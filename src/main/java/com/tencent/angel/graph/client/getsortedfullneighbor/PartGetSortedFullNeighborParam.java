@@ -78,9 +78,12 @@ public class PartGetSortedFullNeighborParam extends PartitionGetParam {
 		}
 
 		int len = buf.readInt();
-		types = new int[len];
-		for (int i = 0; i < len; i++)
-			types[i] = buf.readInt();
+		if (0 != len) {
+			types = new int[len];
+			for (int i = 0; i < len; i++) {
+				types[i] = buf.readInt();
+			}
+		}
 	}
 
 	@Override
