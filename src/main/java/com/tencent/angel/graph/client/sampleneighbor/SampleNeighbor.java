@@ -1,6 +1,7 @@
 package com.tencent.angel.graph.client.sampleneighbor;
 
 import com.tencent.angel.graph.data.Neighbor;
+import com.tencent.angel.graph.data.Node;
 import com.tencent.angel.ml.matrix.psf.get.base.*;
 import com.tencent.angel.ps.storage.matrix.ServerMatrix;
 import com.tencent.angel.ps.storage.partition.RowBasedPartition;
@@ -29,8 +30,23 @@ public class SampleNeighbor extends GetFunc {
 		ServerLongAnyRow row = (ServerLongAnyRow) (((RowBasedPartition) part).getRow(0));
 		long[] nodeIds = param.getNodeIds();
 		Neighbor[] neighbors = new Neighbor[nodeIds.length];
-
 		int count = param.getCount();
+
+		for (int i = 0; i < nodeIds.length; i++) {
+			long nodeId = nodeIds[i];
+
+			// Get node neighbor number
+			Node element = (Node) (row.get(nodeId));
+			if (element == null) {
+				neighbors[i] = null;
+				continue;
+			}
+
+			long[] nodeNeighbors = element.getNeighbors();
+			if (nodeNeighbors == null || nodeNeighbors.length == 0) {
+				neighbors[i] = null;
+			}
+		}
 
 		return new PartSampleNeighborResult(part.getPartitionKey().getPartitionId(), neighbors);
 	}
