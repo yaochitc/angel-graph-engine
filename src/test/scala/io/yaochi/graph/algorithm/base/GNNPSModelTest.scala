@@ -4,6 +4,7 @@ import com.tencent.angel.conf.AngelConf
 import com.tencent.angel.spark.context.PSContext
 import io.yaochi.graph.dataset.CoraDataset
 import io.yaochi.graph.util.DataLoaderUtils
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkConf, SparkContext}
 import org.junit.{After, Before, Test}
 
@@ -32,7 +33,20 @@ class GNNPSModelTest {
     println(s"minId=$minId maxId=$maxId numEdges=$numEdges")
 
     PSContext.getOrCreate(SparkContext.getOrCreate())
-    val psModel = GNNPSModel(minId, maxId, index, 1)
+
+    val partitionNum = 1
+    val numBatchInit = 4
+    val storageLevel = StorageLevel.DISK_ONLY
+
+    val psModel = GNNPSModel(minId, maxId + 1, index, partitionNum)
+    val adj = edges.groupByKey(partitionNum)
+
+    val adjGraph = adj.mapPartitionsWithIndex((index, it) =>
+      Iterator.single(GraphAdjPartition(index, it)))
+
+    adjGraph.persist(storageLevel)
+    adjGraph.foreachPartition(_ => Unit)
+    adjGraph.map(_.init(psModel, numBatchInit)).reduce(_ + _)
   }
 
   @After
