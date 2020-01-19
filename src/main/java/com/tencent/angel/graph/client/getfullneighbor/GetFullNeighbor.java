@@ -50,6 +50,7 @@ public class GetFullNeighbor extends GetFunc {
 
 			long[] nodeNeighbors = element.getNeighbors();
 			int[] nodeTypes = element.getTypes();
+			float[] nodeWeights = element.getWeights();
 
 			if (nodeNeighbors == null || nodeNeighbors.length == 0) {
 				neighbors[i] = null;
@@ -57,7 +58,7 @@ public class GetFullNeighbor extends GetFunc {
 			}
 
 			if (types == null || types.length == 0) {
-				neighbors[i] = new Neighbor(element.getNeighbors(), element.getWeights());
+				neighbors[i] = new Neighbor(nodeNeighbors, nodeWeights);
 				continue;
 			}
 
@@ -67,7 +68,6 @@ public class GetFullNeighbor extends GetFunc {
 			}
 
 			IntSet typeSet = new IntRBTreeSet(types);
-			float[] nodeWeights = element.getWeights();
 			boolean hasWeight = nodeWeights != null;
 
 			LongArrayList nodeNeighborList = new LongArrayList();

@@ -2,6 +2,7 @@ package com.tencent.angel.graph.client.getsortedfullneighbor;
 
 import com.tencent.angel.graph.data.Neighbor;
 import com.tencent.angel.graph.data.Node;
+import com.tencent.angel.graph.util.LongIndexComparator;
 import com.tencent.angel.ml.matrix.psf.get.base.GetFunc;
 import com.tencent.angel.ml.matrix.psf.get.base.GetResult;
 import com.tencent.angel.ml.matrix.psf.get.base.PartitionGetParam;
@@ -10,8 +11,13 @@ import com.tencent.angel.ps.storage.matrix.ServerMatrix;
 import com.tencent.angel.ps.storage.partition.RowBasedPartition;
 import com.tencent.angel.ps.storage.partition.ServerPartition;
 import com.tencent.angel.ps.storage.vector.ServerLongAnyRow;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.List;
 
@@ -38,7 +44,6 @@ public class GetSortedFullNeighbor extends GetFunc {
 		for (int i = 0; i < nodeIds.length; i++) {
 			long nodeId = nodeIds[i];
 
-			// Get node neighbor number
 			Node element = (Node) (row.get(nodeId));
 			if (element == null) {
 				neighbors[i] = null;
@@ -46,12 +51,76 @@ public class GetSortedFullNeighbor extends GetFunc {
 			}
 
 			long[] nodeNeighbors = element.getNeighbors();
+			int[] nodeTypes = element.getTypes();
+			float[] nodeWeights = element.getWeights();
+
 			if (nodeNeighbors == null || nodeNeighbors.length == 0) {
 				neighbors[i] = null;
+				continue;
+			}
+
+			if (types == null || types.length == 0) {
+				neighbors[i] = buildNeighbor(nodeNeighbors, nodeWeights);
+				continue;
+			}
+
+			if (nodeTypes == null) {
+				neighbors[i] = null;
+				continue;
+			}
+
+			IntSet typeSet = new IntRBTreeSet(types);
+			boolean hasWeight = nodeWeights != null;
+
+			LongArrayList nodeNeighborList = new LongArrayList();
+			FloatArrayList nodeWeightList = null;
+			if (hasWeight) {
+				nodeWeightList = new FloatArrayList();
+			}
+
+			for (int j = 0; j < nodeNeighbors.length; j++) {
+				if (typeSet.contains(nodeTypes[j])) {
+					nodeNeighborList.add(nodeNeighbors[j]);
+
+					if (hasWeight) {
+						nodeWeightList.add(nodeWeights[j]);
+					}
+				}
+			}
+
+			if (hasWeight) {
+				neighbors[i] = buildNeighbor(nodeNeighborList.toLongArray(), nodeWeightList.toFloatArray());
+			} else {
+				neighbors[i] = buildNeighbor(nodeNeighborList.toLongArray(), null);
 			}
 		}
 
 		return new PartGetSortedFullNeighborResult(part.getPartitionKey().getPartitionId(), neighbors);
+	}
+
+	private static Neighbor buildNeighbor(long[] nodeNeighbors, float[] nodeWeights) {
+		int size = nodeNeighbors.length;
+		int[] index = new int[size];
+		for (int i = 0; i < size; i++)
+			index[i] = i;
+
+		LongIndexComparator comparator = new LongIndexComparator(nodeNeighbors);
+		IntArrays.quickSort(index, comparator);
+
+		boolean hasWeight = nodeWeights != null;
+		long[] sortedNodeNeighbors = new long[size];
+		float[] sortedNodeWeights = null;
+		if (hasWeight) {
+			sortedNodeWeights = new float[size];
+		}
+
+		for (int i = 0; i < size; i++) {
+			sortedNodeNeighbors[i] = nodeNeighbors[index[i]];
+			if (hasWeight) {
+				sortedNodeWeights[i] = nodeWeights[index[i]];
+			}
+		}
+		return new Neighbor(sortedNodeNeighbors, sortedNodeWeights);
 	}
 
 	@Override
