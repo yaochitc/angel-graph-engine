@@ -9,6 +9,8 @@ import com.tencent.angel.ps.storage.matrix.ServerMatrix;
 import com.tencent.angel.ps.storage.partition.RowBasedPartition;
 import com.tencent.angel.ps.storage.partition.ServerPartition;
 import com.tencent.angel.ps.storage.vector.ServerLongAnyRow;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.List;
 
@@ -35,7 +37,30 @@ public class GetSortedFullNeighbor extends GetFunc {
 	}
 
 	@Override
-	public GetResult merge(List<PartitionGetResult> list) {
-		return null;
+	public GetResult merge(List<PartitionGetResult> partResults) {
+		Int2ObjectArrayMap<PartitionGetResult> partIdToResultMap = new Int2ObjectArrayMap<>(
+				partResults.size());
+		for (PartitionGetResult result : partResults) {
+			partIdToResultMap.put(((PartGetSortedFullNeighborResult) result).getPartId(), result);
+		}
+
+		GetSortedFullNeighborParam param = (GetSortedFullNeighborParam) getParam();
+		long[] nodeIds = param.getNodeIds();
+		List<PartitionGetParam> partParams = param.getPartParams();
+
+		Long2ObjectOpenHashMap<Neighbor> nodeIdToNeighbors = new Long2ObjectOpenHashMap<>(nodeIds.length);
+
+		for (PartitionGetParam partParam : partParams) {
+			int start = ((PartGetSortedFullNeighborParam) partParam).getStartIndex();
+			int end = ((PartGetSortedFullNeighborParam) partParam).getEndIndex();
+			PartGetSortedFullNeighborResult partResult = (PartGetSortedFullNeighborResult) (partIdToResultMap
+					.get(partParam.getPartKey().getPartitionId()));
+			Neighbor[] results = partResult.getNodeIdToNeighbors();
+			for (int i = start; i < end; i++) {
+				nodeIdToNeighbors.put(nodeIds[i], results[i - start]);
+			}
+		}
+
+		return new GetSortedFullNeighborResult(nodeIdToNeighbors);
 	}
 }
