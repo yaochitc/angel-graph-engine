@@ -22,20 +22,20 @@ class GNNPSModelTest {
     sc.setCheckpointDir("cp")
   }
 
-  def makeEdges(edgeDF: DataFrame, hasWeight: Boolean, hasType: Boolean): RDD[Edge] = {
-    val edges = (hasWeight, hasType) match {
+  def makeEdges(edgeDF: DataFrame, hasType: Boolean, hasWeight: Boolean): RDD[Edge] = {
+    val edges = (hasType, hasWeight) match {
       case (false, false) =>
         edgeDF.select("src", "dst").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), None, None))
       case (true, false) =>
         edgeDF.select("src", "dst", "weight").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getFloat(2)), None))
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
       case (false, true) =>
         edgeDF.select("src", "dst", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
+          .map(row => Edge(row.getLong(0), row.getLong(1), None, Some(row.getFloat(2))))
       case (true, true) =>
         edgeDF.select("src", "dst", "weight", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getLong(1)), Some(row.getInt(2))))
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getLong(1))))
     }
     edges.filter(f => f.src != f.dst)
   }
@@ -45,11 +45,11 @@ class GNNPSModelTest {
     val (edgeDF, featureDF, labelDF) = CoraDataset.load("data/cora")
 
     val columns = edgeDF.columns
+    val hasType = columns.contains("type")
     val hasWeight = columns.contains("weight")
-    val hasType = columns.contains("weight")
 
     // read edges
-    val edges = makeEdges(edgeDF, hasWeight, hasType)
+    val edges = makeEdges(edgeDF, hasType, hasWeight)
 
     val (minId, maxId, numEdges) = edges.mapPartitions(DataLoaderUtils.summarizeApplyOp)
       .reduce(DataLoaderUtils.summarizeReduceOp)
@@ -66,7 +66,7 @@ class GNNPSModelTest {
     val adj = edges.map(f => (f.src, f)).groupByKey(partitionNum)
 
     val adjGraph = adj.mapPartitionsWithIndex((index, it) =>
-      Iterator.single(GraphAdjPartition(index, it, hasWeight, hasType)))
+      Iterator.single(GraphAdjPartition(index, it, hasType, hasWeight)))
 
     adjGraph.persist(storageLevel)
     adjGraph.foreachPartition(_ => Unit)

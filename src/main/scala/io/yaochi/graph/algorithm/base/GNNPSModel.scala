@@ -25,6 +25,8 @@ class GNNPSModel(val graph: PSMatrix) extends Serializable {
   def initNeighbors(keys: Array[Long],
                     indptr: Array[Int],
                     neighbors: Array[Long],
+                    types: Array[Int],
+                    weights: Array[Float],
                     numBatch: Int): Unit = {
     println(s"mini batch init neighbors")
     val step = keys.length / numBatch
@@ -32,7 +34,7 @@ class GNNPSModel(val graph: PSMatrix) extends Serializable {
     var start = 0
     while (start < keys.length) {
       val end = math.min(start + step, keys.length)
-      initNeighbors(keys, indptr, neighbors, start, end)
+      initNeighbors(keys, indptr, neighbors, types, weights, start, end)
       start += step
     }
   }
@@ -40,9 +42,11 @@ class GNNPSModel(val graph: PSMatrix) extends Serializable {
   def initNeighbors(keys: Array[Long],
                     indptr: Array[Int],
                     neighbors: Array[Long],
+                    types: Array[Int],
+                    weights: Array[Float],
                     start: Int,
                     end: Int): Unit = {
-    val param = new InitNeighborParam(graph.id, keys, indptr, neighbors, start, end)
+    val param = new InitNeighborParam(graph.id, keys, indptr, neighbors, types, weights, start, end)
     val func = new InitNeighbor(param)
     graph.psfUpdate(func).get()
   }
