@@ -18,6 +18,10 @@ public class GetFullNeighbor extends GetFunc {
 		super(param);
 	}
 
+	public GetFullNeighbor() {
+		this(null);
+	}
+
 	@Override
 	public PartitionGetResult partitionGet(PartitionGetParam partParam) {
 		PartGetFullNeighborParam param = (PartGetFullNeighborParam) partParam;

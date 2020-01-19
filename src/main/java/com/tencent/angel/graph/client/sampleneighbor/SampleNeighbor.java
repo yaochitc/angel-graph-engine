@@ -10,6 +10,10 @@ public class SampleNeighbor extends GetFunc {
 		super(param);
 	}
 
+	public SampleNeighbor() {
+		this(null);
+	}
+
 	@Override
 	public PartitionGetResult partitionGet(PartitionGetParam partitionGetParam) {
 		return null;

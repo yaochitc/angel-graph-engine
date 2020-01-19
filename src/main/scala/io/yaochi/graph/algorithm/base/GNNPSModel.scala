@@ -78,12 +78,12 @@ class GNNPSModel(val graph: PSMatrix) extends Serializable {
   }
 
   def getFullNeighbors(keys: Array[Long], types: Array[Int]): Long2ObjectOpenHashMap[Neighbor] = {
-    val func = new GetFullNeighbor(new GetFullNeighborParam(graph.id, keys.clone(), types.clone()))
+    val func = new GetFullNeighbor(new GetFullNeighborParam(graph.id, keys.clone(), types))
     graph.psfGet(func).asInstanceOf[GetFullNeighborResult].getNodeIdToNeighbors
   }
 
   def sampleNeighbors(keys: Array[Long], types: Array[Int], count: Int): Long2ObjectOpenHashMap[Neighbor] = {
-    val func = new SampleNeighbor(new SampleNeighborParam(graph.id, keys.clone(), types.clone(), count))
+    val func = new SampleNeighbor(new SampleNeighborParam(graph.id, keys.clone(), types, count))
     graph.psfGet(func).asInstanceOf[SampleNeighborResult].getNodeIdToNeighbors
   }
 }
