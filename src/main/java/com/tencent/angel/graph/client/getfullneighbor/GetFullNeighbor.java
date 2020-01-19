@@ -10,8 +10,12 @@ import com.tencent.angel.ps.storage.matrix.ServerMatrix;
 import com.tencent.angel.ps.storage.partition.RowBasedPartition;
 import com.tencent.angel.ps.storage.partition.ServerPartition;
 import com.tencent.angel.ps.storage.vector.ServerLongAnyRow;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.List;
 
@@ -38,7 +42,6 @@ public class GetFullNeighbor extends GetFunc {
 		for (int i = 0; i < nodeIds.length; i++) {
 			long nodeId = nodeIds[i];
 
-			// Get node neighbor number
 			Node element = (Node) (row.get(nodeId));
 			if (element == null) {
 				neighbors[i] = null;
@@ -46,6 +49,8 @@ public class GetFullNeighbor extends GetFunc {
 			}
 
 			long[] nodeNeighbors = element.getNeighbors();
+			int[] nodeTypes = element.getTypes();
+
 			if (nodeNeighbors == null || nodeNeighbors.length == 0) {
 				neighbors[i] = null;
 				continue;
@@ -53,6 +58,38 @@ public class GetFullNeighbor extends GetFunc {
 
 			if (types == null || types.length == 0) {
 				neighbors[i] = new Neighbor(element.getNeighbors(), element.getWeights());
+				continue;
+			}
+
+			if (nodeTypes == null) {
+				neighbors[i] = null;
+				continue;
+			}
+
+			IntSet typeSet = new IntRBTreeSet(types);
+			float[] nodeWeights = element.getWeights();
+			boolean hasWeight = nodeWeights != null;
+
+			LongArrayList nodeNeighborList = new LongArrayList();
+			FloatArrayList nodeWeightList = null;
+			if (hasWeight) {
+				nodeWeightList = new FloatArrayList();
+			}
+
+			for (int j = 0; j < nodeNeighbors.length; j++) {
+				if (typeSet.contains(nodeTypes[j])) {
+					nodeNeighborList.add(nodeNeighbors[j]);
+
+					if (hasWeight) {
+						nodeWeightList.add(nodeWeights[j]);
+					}
+				}
+			}
+
+			if (hasWeight) {
+				neighbors[i] = new Neighbor(nodeNeighborList.toLongArray(), nodeWeightList.toFloatArray());
+			} else {
+				neighbors[i] = new Neighbor(nodeNeighborList.toLongArray(), null);
 			}
 		}
 
