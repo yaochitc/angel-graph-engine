@@ -19,10 +19,6 @@ public class Node implements IElement {
 	private int[] types;
 	private float[] weights;
 
-	public Node(IntFloatVector feats, long[] neighbors) {
-		this(feats, neighbors, null, null);
-	}
-
 	public Node(IntFloatVector feats, long[] neighbors, int[] types, float[] weights) {
 		this.feats = feats;
 		this.neighbors = neighbors;
