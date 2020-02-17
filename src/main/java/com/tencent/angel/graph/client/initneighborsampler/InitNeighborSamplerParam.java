@@ -10,8 +10,11 @@ import java.util.List;
 
 public class InitNeighborSamplerParam extends UpdateParam {
 
-    public InitNeighborSamplerParam(int matrixId) {
+    private int numTypes;
+
+    public InitNeighborSamplerParam(int matrixId, int numTypes) {
 		super(matrixId);
+		this.numTypes = numTypes;
     }
 
     @Override
@@ -21,7 +24,7 @@ public class InitNeighborSamplerParam extends UpdateParam {
 
         int partIndex = 0;
         while (partIndex < parts.size()) {
-            params.add(new InitNeighborSamplerPartParam(matrixId, parts.get(partIndex)));
+            params.add(new InitNeighborSamplerPartParam(matrixId, parts.get(partIndex), numTypes));
         }
 
         return params;

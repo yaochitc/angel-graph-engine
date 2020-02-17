@@ -25,6 +25,7 @@ public class InitNeighborSampler extends UpdateFunc {
     public void partitionUpdate(PartitionUpdateParam partParam) {
         InitNeighborSamplerPartParam param = (InitNeighborSamplerPartParam) partParam;
         ServerLongAnyRow row = (ServerLongAnyRow) (psContext.getMatrixStorageManager().getRow(param.getPartKey(), 0));
+        int numTypes = param.getNumTypes();
 
         row.startWrite();
         try {
@@ -60,25 +61,29 @@ public class InitNeighborSampler extends UpdateFunc {
 
                 float[] typeAccSumWeights = new float[type2Neighbors.size()];
                 int[] typeGroupIndices = new int[type2Neighbors.size()];
-                long[] typeNodeNeighbors = new long[nodeNeighbors.length];
                 float[] nodeAccSumWeights = new float[nodeNeighbors.length];
 
                 int typeIndex = 0;
                 int neighborIndex = 0;
                 float typeAccSumWeight = 0;
-                for (int type : type2Neighbors.keySet()) {
+                for (int type = 0; type < numTypes; type++) {
                     LongArrayList nodeNeighborList = type2Neighbors.get(type);
                     FloatArrayList nodeWeightList = type2Weights.get(type);
-                    int numNeighbor = nodeNeighborList.size();
+                    int numNeighbor = null == nodeNeighborList ? 0 : nodeNeighborList.size();
 
                     float curTypeAccSumWeight = typeAccSumWeight;
                     float curNodeAccSumWeight = 0;
                     for (int i = 0; i < numNeighbor; i++) {
                         float weight = nodeWeightList.getFloat(i);
                         long neighbor = nodeNeighborList.getLong(i);
+
+                        // update the neighbors by type group
+                        nodeNeighbors[neighborIndex] = neighbor;
+                        types[neighborIndex] = type;
+                        weights[neighborIndex] = weight;
+
                         curTypeAccSumWeight += weight;
                         curNodeAccSumWeight += weight;
-                        typeNodeNeighbors[neighborIndex] = neighbor;
                         nodeAccSumWeights[neighborIndex] = curNodeAccSumWeight;
                         neighborIndex++;
                     }
@@ -88,7 +93,6 @@ public class InitNeighborSampler extends UpdateFunc {
                     typeIndex++;
                 }
 
-                node.setNeighbors(typeNodeNeighbors);
                 node.setTypeAccSumWeights(typeAccSumWeights);
                 node.setTypeGroupIndices(typeGroupIndices);
                 node.setNodeAccSumWeights(nodeAccSumWeights);

@@ -69,12 +69,24 @@ public class Node implements IElement {
         this.weights = weights;
     }
 
+    public float[] getTypeAccSumWeights() {
+        return typeAccSumWeights;
+    }
+
     public void setTypeAccSumWeights(float[] typeAccSumWeights) {
         this.typeAccSumWeights = typeAccSumWeights;
     }
 
+    public int[] getTypeGroupIndices() {
+        return typeGroupIndices;
+    }
+
     public void setTypeGroupIndices(int[] typeGroupIndices) {
         this.typeGroupIndices = typeGroupIndices;
+    }
+
+    public float[] getNodeAccSumWeights() {
+        return nodeAccSumWeights;
     }
 
     public void setNodeAccSumWeights(float[] nodeAccSumWeights) {
