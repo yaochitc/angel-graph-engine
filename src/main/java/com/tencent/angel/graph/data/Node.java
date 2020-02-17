@@ -13,179 +13,267 @@ import java.io.IOException;
  */
 public class Node implements IElement {
 
-	private IntFloatVector feats;
+    private IntFloatVector feats;
 
-	private long[] neighbors;
-	private int[] types;
-	private float[] weights;
+    private long[] neighbors;
+    private int[] types;
+    private float[] weights;
+    private float[] typeAccSumWeights;
+    private float[] nodeAccSumWeights;
 
-	public Node(IntFloatVector feats, long[] neighbors, int[] types, float[] weights) {
-		this.feats = feats;
-		this.neighbors = neighbors;
-		this.types = types;
-		this.weights = weights;
-	}
+    public Node(IntFloatVector feats, long[] neighbors, int[] types, float[] weights, float[] typeAccSumWeights, float[] nodeAccSumWeights) {
+        this.feats = feats;
+        this.neighbors = neighbors;
+        this.types = types;
+        this.weights = weights;
+        this.typeAccSumWeights = typeAccSumWeights;
+        this.nodeAccSumWeights = nodeAccSumWeights;
+    }
 
-	public Node() {
-		this(null, null, null, null);
-	}
+    public Node() {
+        this(null, null, null, null, null, null);
+    }
 
-	public IntFloatVector getFeats() {
-		return feats;
-	}
+    public IntFloatVector getFeats() {
+        return feats;
+    }
 
-	public void setFeats(IntFloatVector feats) {
-		this.feats = feats;
-	}
+    public void setFeats(IntFloatVector feats) {
+        this.feats = feats;
+    }
 
-	public long[] getNeighbors() {
-		return neighbors;
-	}
+    public long[] getNeighbors() {
+        return neighbors;
+    }
 
-	public void setNeighbors(long[] neighbors) {
-		this.neighbors = neighbors;
-	}
+    public void setNeighbors(long[] neighbors) {
+        this.neighbors = neighbors;
+    }
 
-	public int[] getTypes() {
-		return types;
-	}
+    public int[] getTypes() {
+        return types;
+    }
 
-	public void setTypes(int[] types) {
-		this.types = types;
-	}
+    public void setTypes(int[] types) {
+        this.types = types;
+    }
 
-	public float[] getWeights() {
-		return weights;
-	}
+    public float[] getWeights() {
+        return weights;
+    }
 
-	public void setWeights(float[] weights) {
-		this.weights = weights;
-	}
+    public void setWeights(float[] weights) {
+        this.weights = weights;
+    }
 
-	@Override
-	public Node deepClone() {
-		IntFloatVector cloneFeats = feats.clone();
+    @Override
+    public Node deepClone() {
+        IntFloatVector cloneFeats = feats.clone();
 
-		long[] cloneNeighbors = new long[neighbors.length];
-		System.arraycopy(neighbors, 0, cloneNeighbors, 0, neighbors.length);
+        long[] cloneNeighbors = new long[neighbors.length];
+        System.arraycopy(neighbors, 0, cloneNeighbors, 0, neighbors.length);
 
-		int[] cloneTypes = null;
-		if (types != null) {
-			cloneTypes = new int[types.length];
-			System.arraycopy(types, 0, cloneTypes, 0, types.length);
-		}
+        int[] cloneTypes = null;
+        if (types != null) {
+            cloneTypes = new int[types.length];
+            System.arraycopy(types, 0, cloneTypes, 0, types.length);
+        }
 
-		float[] cloneWeights = null;
-		if (weights != null) {
-			cloneWeights = new float[weights.length];
-			System.arraycopy(weights, 0, cloneWeights, 0, weights.length);
-		}
-		return new Node(cloneFeats, cloneNeighbors, cloneTypes, cloneWeights);
-	}
+        float[] cloneWeights = null;
+        if (weights != null) {
+            cloneWeights = new float[weights.length];
+            System.arraycopy(weights, 0, cloneWeights, 0, weights.length);
+        }
 
-	@Override
-	public void serialize(ByteBuf output) {
-		NodeUtils.serialize(feats, output);
+        float[] cloneTypeAccSumWeights = null;
+        if (typeAccSumWeights != null) {
+            cloneTypeAccSumWeights = new float[typeAccSumWeights.length];
+            System.arraycopy(typeAccSumWeights, 0, cloneTypeAccSumWeights, 0, typeAccSumWeights.length);
+        }
 
-		output.writeInt(neighbors.length);
-		for (int i = 0; i < neighbors.length; i++)
-			output.writeLong(neighbors[i]);
+        float[] cloneNodeAccSumWeights = null;
+        if (nodeAccSumWeights != null) {
+            cloneNodeAccSumWeights = new float[nodeAccSumWeights.length];
+            System.arraycopy(nodeAccSumWeights, 0, cloneNodeAccSumWeights, 0, nodeAccSumWeights.length);
+        }
+        return new Node(cloneFeats, cloneNeighbors, cloneTypes, cloneWeights, cloneTypeAccSumWeights, cloneNodeAccSumWeights);
+    }
 
-		if (types == null) {
-			output.writeInt(0);
-		} else {
-			output.writeInt(types.length);
-			for (int i = 0; i < types.length; i++)
-				output.writeInt(types[i]);
-		}
+    @Override
+    public void serialize(ByteBuf output) {
+        NodeUtils.serialize(feats, output);
 
-		if (weights == null) {
-			output.writeInt(0);
-		} else {
-			output.writeInt(weights.length);
-			for (int i = 0; i < weights.length; i++)
-				output.writeFloat(weights[i]);
-		}
-	}
+        output.writeInt(neighbors.length);
+        for (int i = 0; i < neighbors.length; i++)
+            output.writeLong(neighbors[i]);
 
-	@Override
-	public void deserialize(ByteBuf input) {
-		feats = NodeUtils.deserialize(input);
+        if (types == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(types.length);
+            for (int i = 0; i < types.length; i++)
+                output.writeInt(types[i]);
+        }
 
-		int len = input.readInt();
-		neighbors = new long[len];
-		for (int i = 0; i < len; i++)
-			neighbors[i] = input.readLong();
+        if (weights == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(weights.length);
+            for (int i = 0; i < weights.length; i++)
+                output.writeFloat(weights[i]);
+        }
 
-		len = input.readInt();
-		types = new int[len];
-		for (int i = 0; i < len; i++)
-			types[i] = input.readInt();
+        if (typeAccSumWeights == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(typeAccSumWeights.length);
+            for (int i = 0; i < typeAccSumWeights.length; i++)
+                output.writeFloat(typeAccSumWeights[i]);
+        }
 
-		len = input.readInt();
-		weights = new float[len];
-		for (int i = 0; i < len; i++)
-			weights[i] = input.readFloat();
-	}
+        if (nodeAccSumWeights == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(nodeAccSumWeights.length);
+            for (int i = 0; i < nodeAccSumWeights.length; i++)
+                output.writeFloat(nodeAccSumWeights[i]);
+        }
+    }
 
-	@Override
-	public int bufferLen() {
-		int len = NodeUtils.dataLen(feats);
-		len += 4 + 8 * neighbors.length + 4 + 4;
-		if (types != null)
-			len += 4 * types.length;
-		if (weights != null)
-			len += 4 * weights.length;
-		return len;
-	}
+    @Override
+    public void deserialize(ByteBuf input) {
+        feats = NodeUtils.deserialize(input);
 
-	@Override
-	public void serialize(DataOutputStream output) throws IOException {
-		NodeUtils.serialize(feats, output);
+        int len = input.readInt();
+        neighbors = new long[len];
+        for (int i = 0; i < len; i++)
+            neighbors[i] = input.readLong();
 
-		output.writeInt(neighbors.length);
-		for (int i = 0; i < neighbors.length; i++)
-			output.writeLong(neighbors[i]);
+        len = input.readInt();
+        if (len > 0) {
+            types = new int[len];
+            for (int i = 0; i < len; i++)
+                types[i] = input.readInt();
+        }
 
-		if (types == null) {
-			output.writeInt(0);
-		} else {
-			output.writeInt(types.length);
-			for (int i = 0; i < types.length; i++)
-				output.writeInt(types[i]);
-		}
+        len = input.readInt();
+        if (len > 0) {
+            weights = new float[len];
+            for (int i = 0; i < len; i++)
+                weights[i] = input.readFloat();
+        }
 
-		if (weights == null) {
-			output.writeInt(0);
-		} else {
-			output.writeInt(weights.length);
-			for (int i = 0; i < weights.length; i++)
-				output.writeFloat(weights[i]);
-		}
-	}
+        len = input.readInt();
+        if (len > 0) {
+            typeAccSumWeights = new float[len];
+            for (int i = 0; i < len; i++)
+                typeAccSumWeights[i] = input.readInt();
+        }
 
-	@Override
-	public void deserialize(DataInputStream input) throws IOException {
-		feats = NodeUtils.deserialize(input);
+        len = input.readInt();
+        if (len > 0) {
+            nodeAccSumWeights = new float[len];
+            for (int i = 0; i < len; i++)
+                nodeAccSumWeights[i] = input.readFloat();
+        }
+    }
 
-		int len = input.readInt();
-		neighbors = new long[len];
-		for (int i = 0; i < len; i++)
-			neighbors[i] = input.readLong();
+    @Override
+    public int bufferLen() {
+        int len = NodeUtils.dataLen(feats);
+        len += 4 + 8 * neighbors.length + 4 + 4 + 4 + 4;
+        if (types != null)
+            len += 4 * types.length;
+        if (weights != null)
+            len += 4 * weights.length;
+        if (typeAccSumWeights != null)
+            len += 4 * typeAccSumWeights.length;
+        if (nodeAccSumWeights != null)
+            len += 4 * nodeAccSumWeights.length;
+        return len;
+    }
 
-		len = input.readInt();
-		types = new int[len];
-		for (int i = 0; i < len; i++)
-			types[i] = input.readInt();
+    @Override
+    public void serialize(DataOutputStream output) throws IOException {
+        NodeUtils.serialize(feats, output);
 
-		len = input.readInt();
-		weights = new float[len];
-		for (int i = 0; i < len; i++)
-			weights[i] = input.readFloat();
-	}
+        output.writeInt(neighbors.length);
+        for (int i = 0; i < neighbors.length; i++)
+            output.writeLong(neighbors[i]);
 
-	@Override
-	public int dataLen() {
-		return bufferLen();
-	}
+        if (types == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(types.length);
+            for (int i = 0; i < types.length; i++)
+                output.writeInt(types[i]);
+        }
+
+        if (weights == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(weights.length);
+            for (int i = 0; i < weights.length; i++)
+                output.writeFloat(weights[i]);
+        }
+
+        if (typeAccSumWeights == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(typeAccSumWeights.length);
+            for (int i = 0; i < typeAccSumWeights.length; i++)
+                output.writeFloat(typeAccSumWeights[i]);
+        }
+
+        if (nodeAccSumWeights == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(nodeAccSumWeights.length);
+            for (int i = 0; i < nodeAccSumWeights.length; i++)
+                output.writeFloat(nodeAccSumWeights[i]);
+        }
+    }
+
+    @Override
+    public void deserialize(DataInputStream input) throws IOException {
+        feats = NodeUtils.deserialize(input);
+
+        int len = input.readInt();
+        neighbors = new long[len];
+        for (int i = 0; i < len; i++)
+            neighbors[i] = input.readLong();
+
+        len = input.readInt();
+        if (len > 0) {
+            types = new int[len];
+            for (int i = 0; i < len; i++)
+                types[i] = input.readInt();
+        }
+
+        len = input.readInt();
+        if (len > 0) {
+            weights = new float[len];
+            for (int i = 0; i < len; i++)
+                weights[i] = input.readFloat();
+        }
+
+        len = input.readInt();
+        if (len > 0) {
+            typeAccSumWeights = new float[len];
+            for (int i = 0; i < len; i++)
+                typeAccSumWeights[i] = input.readInt();
+        }
+
+        len = input.readInt();
+        if (len > 0) {
+            nodeAccSumWeights = new float[len];
+            for (int i = 0; i < len; i++)
+                nodeAccSumWeights[i] = input.readFloat();
+        }
+    }
+
+    @Override
+    public int dataLen() {
+        return bufferLen();
+    }
 }
