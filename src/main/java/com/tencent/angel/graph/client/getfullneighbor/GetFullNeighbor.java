@@ -62,35 +62,19 @@ public class GetFullNeighbor extends GetFunc {
 				continue;
 			}
 
-			if (nodeTypes == null) {
-				neighbors[i] = null;
-				continue;
-			}
-
 			IntSet typeSet = new IntRBTreeSet(types);
-			boolean hasWeight = nodeWeights != null;
 
 			LongArrayList nodeNeighborList = new LongArrayList();
-			FloatArrayList nodeWeightList = null;
-			if (hasWeight) {
-				nodeWeightList = new FloatArrayList();
-			}
+			FloatArrayList nodeWeightList = new FloatArrayList();
 
 			for (int j = 0; j < nodeNeighbors.length; j++) {
 				if (typeSet.contains(nodeTypes[j])) {
 					nodeNeighborList.add(nodeNeighbors[j]);
-
-					if (hasWeight) {
-						nodeWeightList.add(nodeWeights[j]);
-					}
+					nodeWeightList.add(nodeWeights[j]);
 				}
 			}
 
-			if (hasWeight) {
-				neighbors[i] = new Neighbor(nodeNeighborList.toLongArray(), nodeWeightList.toFloatArray());
-			} else {
-				neighbors[i] = new Neighbor(nodeNeighborList.toLongArray(), null);
-			}
+			neighbors[i] = new Neighbor(nodeNeighborList.toLongArray(), nodeWeightList.toFloatArray());
 		}
 
 		return new PartGetFullNeighborResult(part.getPartitionKey().getPartitionId(), neighbors);

@@ -46,6 +46,7 @@ public class SampleNeighbor extends GetFunc {
 			if (nodeNeighbors == null || nodeNeighbors.length == 0) {
 				neighbors[i] = null;
 			}
+
 		}
 
 		return new PartSampleNeighborResult(part.getPartitionKey().getPartitionId(), neighbors);

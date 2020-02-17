@@ -64,35 +64,19 @@ public class GetSortedFullNeighbor extends GetFunc {
 				continue;
 			}
 
-			if (nodeTypes == null) {
-				neighbors[i] = null;
-				continue;
-			}
-
 			IntSet typeSet = new IntRBTreeSet(types);
-			boolean hasWeight = nodeWeights != null;
 
 			LongArrayList nodeNeighborList = new LongArrayList();
-			FloatArrayList nodeWeightList = null;
-			if (hasWeight) {
-				nodeWeightList = new FloatArrayList();
-			}
+			FloatArrayList nodeWeightList = new FloatArrayList();
 
 			for (int j = 0; j < nodeNeighbors.length; j++) {
 				if (typeSet.contains(nodeTypes[j])) {
 					nodeNeighborList.add(nodeNeighbors[j]);
-
-					if (hasWeight) {
-						nodeWeightList.add(nodeWeights[j]);
-					}
+					nodeWeightList.add(nodeWeights[j]);
 				}
 			}
 
-			if (hasWeight) {
-				neighbors[i] = buildNeighbor(nodeNeighborList.toLongArray(), nodeWeightList.toFloatArray());
-			} else {
-				neighbors[i] = buildNeighbor(nodeNeighborList.toLongArray(), null);
-			}
+			neighbors[i] = buildNeighbor(nodeNeighborList.toLongArray(), nodeWeightList.toFloatArray());
 		}
 
 		return new PartGetSortedFullNeighborResult(part.getPartitionKey().getPartitionId(), neighbors);
@@ -107,18 +91,12 @@ public class GetSortedFullNeighbor extends GetFunc {
 		LongIndexComparator comparator = new LongIndexComparator(nodeNeighbors);
 		IntArrays.quickSort(index, comparator);
 
-		boolean hasWeight = nodeWeights != null;
 		long[] sortedNodeNeighbors = new long[size];
-		float[] sortedNodeWeights = null;
-		if (hasWeight) {
-			sortedNodeWeights = new float[size];
-		}
+		float[] sortedNodeWeights = new float[size];
 
 		for (int i = 0; i < size; i++) {
 			sortedNodeNeighbors[i] = nodeNeighbors[index[i]];
-			if (hasWeight) {
-				sortedNodeWeights[i] = nodeWeights[index[i]];
-			}
+			sortedNodeWeights[i] = nodeWeights[index[i]];
 		}
 		return new Neighbor(sortedNodeNeighbors, sortedNodeWeights);
 	}

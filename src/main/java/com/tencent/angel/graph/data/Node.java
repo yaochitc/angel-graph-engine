@@ -19,19 +19,22 @@ public class Node implements IElement {
     private int[] types;
     private float[] weights;
     private float[] typeAccSumWeights;
+    private int[] typeGroupIndices;
     private float[] nodeAccSumWeights;
 
-    public Node(IntFloatVector feats, long[] neighbors, int[] types, float[] weights, float[] typeAccSumWeights, float[] nodeAccSumWeights) {
+    public Node(IntFloatVector feats, long[] neighbors, int[] types, float[] weights,
+                float[] typeAccSumWeights, int[] typeGroupIndices, float[] nodeAccSumWeights) {
         this.feats = feats;
         this.neighbors = neighbors;
         this.types = types;
         this.weights = weights;
         this.typeAccSumWeights = typeAccSumWeights;
+        this.typeGroupIndices = typeGroupIndices;
         this.nodeAccSumWeights = nodeAccSumWeights;
     }
 
     public Node() {
-        this(null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null);
     }
 
     public IntFloatVector getFeats() {
@@ -66,6 +69,18 @@ public class Node implements IElement {
         this.weights = weights;
     }
 
+    public void setTypeAccSumWeights(float[] typeAccSumWeights) {
+        this.typeAccSumWeights = typeAccSumWeights;
+    }
+
+    public void setTypeGroupIndices(int[] typeGroupIndices) {
+        this.typeGroupIndices = typeGroupIndices;
+    }
+
+    public void setNodeAccSumWeights(float[] nodeAccSumWeights) {
+        this.nodeAccSumWeights = nodeAccSumWeights;
+    }
+
     @Override
     public Node deepClone() {
         IntFloatVector cloneFeats = feats.clone();
@@ -91,12 +106,18 @@ public class Node implements IElement {
             System.arraycopy(typeAccSumWeights, 0, cloneTypeAccSumWeights, 0, typeAccSumWeights.length);
         }
 
+        int[] cloneTypeGroupIndices = null;
+        if (typeGroupIndices != null) {
+            cloneTypeGroupIndices = new int[typeGroupIndices.length];
+            System.arraycopy(typeGroupIndices, 0, cloneTypeGroupIndices, 0, typeGroupIndices.length);
+        }
+
         float[] cloneNodeAccSumWeights = null;
         if (nodeAccSumWeights != null) {
             cloneNodeAccSumWeights = new float[nodeAccSumWeights.length];
             System.arraycopy(nodeAccSumWeights, 0, cloneNodeAccSumWeights, 0, nodeAccSumWeights.length);
         }
-        return new Node(cloneFeats, cloneNeighbors, cloneTypes, cloneWeights, cloneTypeAccSumWeights, cloneNodeAccSumWeights);
+        return new Node(cloneFeats, cloneNeighbors, cloneTypes, cloneWeights, cloneTypeAccSumWeights, cloneTypeGroupIndices, cloneNodeAccSumWeights);
     }
 
     @Override
@@ -129,6 +150,14 @@ public class Node implements IElement {
             output.writeInt(typeAccSumWeights.length);
             for (int i = 0; i < typeAccSumWeights.length; i++)
                 output.writeFloat(typeAccSumWeights[i]);
+        }
+
+        if (typeGroupIndices == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(typeGroupIndices.length);
+            for (int i = 0; i < typeGroupIndices.length; i++)
+                output.writeInt(typeGroupIndices[i]);
         }
 
         if (nodeAccSumWeights == null) {
@@ -167,7 +196,14 @@ public class Node implements IElement {
         if (len > 0) {
             typeAccSumWeights = new float[len];
             for (int i = 0; i < len; i++)
-                typeAccSumWeights[i] = input.readInt();
+                typeAccSumWeights[i] = input.readFloat();
+        }
+
+        len = input.readInt();
+        if (len > 0) {
+            typeGroupIndices = new int[len];
+            for (int i = 0; i < len; i++)
+                typeGroupIndices[i] = input.readInt();
         }
 
         len = input.readInt();
@@ -181,13 +217,15 @@ public class Node implements IElement {
     @Override
     public int bufferLen() {
         int len = NodeUtils.dataLen(feats);
-        len += 4 + 8 * neighbors.length + 4 + 4 + 4 + 4;
+        len += 4 + 8 * neighbors.length + 4 * 5;
         if (types != null)
             len += 4 * types.length;
         if (weights != null)
             len += 4 * weights.length;
         if (typeAccSumWeights != null)
             len += 4 * typeAccSumWeights.length;
+        if (typeGroupIndices != null)
+            len += 4 * typeGroupIndices.length;
         if (nodeAccSumWeights != null)
             len += 4 * nodeAccSumWeights.length;
         return len;
@@ -223,6 +261,14 @@ public class Node implements IElement {
             output.writeInt(typeAccSumWeights.length);
             for (int i = 0; i < typeAccSumWeights.length; i++)
                 output.writeFloat(typeAccSumWeights[i]);
+        }
+
+        if (typeGroupIndices == null) {
+            output.writeInt(0);
+        } else {
+            output.writeInt(typeGroupIndices.length);
+            for (int i = 0; i < typeGroupIndices.length; i++)
+                output.writeInt(typeGroupIndices[i]);
         }
 
         if (nodeAccSumWeights == null) {
@@ -261,7 +307,14 @@ public class Node implements IElement {
         if (len > 0) {
             typeAccSumWeights = new float[len];
             for (int i = 0; i < len; i++)
-                typeAccSumWeights[i] = input.readInt();
+                typeAccSumWeights[i] = input.readFloat();
+        }
+
+        len = input.readInt();
+        if (len > 0) {
+            typeGroupIndices = new int[len];
+            for (int i = 0; i < len; i++)
+                typeGroupIndices[i] = input.readInt();
         }
 
         len = input.readInt();
