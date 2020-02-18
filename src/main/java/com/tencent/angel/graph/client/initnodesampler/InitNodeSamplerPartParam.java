@@ -1,10 +1,10 @@
-package com.tencent.angel.graph.client.initglobalsampler;
+package com.tencent.angel.graph.client.initnodesampler;
 
 import com.tencent.angel.PartitionKey;
 import com.tencent.angel.ml.matrix.psf.update.base.PartitionUpdateParam;
 import io.netty.buffer.ByteBuf;
 
-public class InitGlobalSamplerPartParam extends PartitionUpdateParam {
+public class InitNodeSamplerPartParam extends PartitionUpdateParam {
 
 	private int[] index;
 	private long[] nodeIds;
@@ -13,9 +13,9 @@ public class InitGlobalSamplerPartParam extends PartitionUpdateParam {
 	private int startIndex;
 	private int endIndex;
 
-	public InitGlobalSamplerPartParam(int matrixId, PartitionKey pkey,
-									  int[] index, long[] nodeIds, int[] types,
-									  float[] weights, int startIndex, int endIndex) {
+	public InitNodeSamplerPartParam(int matrixId, PartitionKey pkey,
+									int[] index, long[] nodeIds, int[] types,
+									float[] weights, int startIndex, int endIndex) {
 		super(matrixId, pkey);
 		this.index = index;
 		this.nodeIds = nodeIds;
@@ -25,7 +25,7 @@ public class InitGlobalSamplerPartParam extends PartitionUpdateParam {
 		this.endIndex = endIndex;
 	}
 
-	public InitGlobalSamplerPartParam() {
+	public InitNodeSamplerPartParam() {
 		this(0, null,null, null, null, null, 0, 0);
 	}
 

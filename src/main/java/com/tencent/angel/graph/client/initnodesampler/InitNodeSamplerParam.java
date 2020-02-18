@@ -1,8 +1,7 @@
-package com.tencent.angel.graph.client.initglobalsampler;
+package com.tencent.angel.graph.client.initnodesampler;
 
 import com.tencent.angel.PartitionKey;
 import com.tencent.angel.exception.AngelException;
-import com.tencent.angel.graph.client.initneighbor.InitNeighborPartParam;
 import com.tencent.angel.graph.util.LongIndexComparator;
 import com.tencent.angel.ml.matrix.psf.update.base.PartitionUpdateParam;
 import com.tencent.angel.ml.matrix.psf.update.base.UpdateParam;
@@ -13,7 +12,7 @@ import it.unimi.dsi.fastutil.ints.IntArrays;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InitGlobalSamplerParam extends UpdateParam {
+public class InitNodeSamplerParam extends UpdateParam {
 
     private long[] nodeIds;
     private int[] types;
@@ -21,14 +20,14 @@ public class InitGlobalSamplerParam extends UpdateParam {
     private int start;
     private int end;
 
-    public InitGlobalSamplerParam(int matrixId, long[] nodeIds,
-                             int start, int end) {
+    public InitNodeSamplerParam(int matrixId, long[] nodeIds,
+                                int start, int end) {
         this(matrixId, nodeIds, null, null, start, end);
     }
 
-    public InitGlobalSamplerParam(int matrixId, long[] nodeIds,
-                             int[] types, float[] weights,
-                             int start, int end) {
+    public InitNodeSamplerParam(int matrixId, long[] nodeIds,
+                                int[] types, float[] weights,
+                                int start, int end) {
         super(matrixId);
         this.nodeIds = nodeIds;
         this.types = types;
@@ -47,27 +46,27 @@ public class InitGlobalSamplerParam extends UpdateParam {
         IntArrays.quickSort(index, comparator);
 
         List<PartitionUpdateParam> params = new ArrayList<>();
-        List<PartitionKey> parts = PSAgentContext.get().getMatrixMetaManager().getPartitions(matrixId);
+        List<PartitionKey> partitions = PSAgentContext.get().getMatrixMetaManager().getPartitions(matrixId);
 
-        if (!RowUpdateSplitUtils.isInRange(nodeIds, index, parts)) {
+        if (!RowUpdateSplitUtils.isInRange(nodeIds, index, partitions)) {
             throw new AngelException(
-                    "node id is not in range [" + parts.get(0).getStartCol() + ", " + parts
-                            .get(parts.size() - 1).getEndCol());
+                    "node id is not in range [" + partitions.get(0).getStartCol() + ", " + partitions
+                            .get(partitions.size() - 1).getEndCol());
         }
 
         int nodeIndex = start;
         int partIndex = 0;
-        while (nodeIndex < end || partIndex < parts.size()) {
+        while (nodeIndex < end || partIndex < partitions.size()) {
             int length = 0;
-            long endOffset = parts.get(partIndex).getEndCol();
+            long endOffset = partitions.get(partIndex).getEndCol();
             while (nodeIndex < end && nodeIds[index[nodeIndex - start]] < endOffset) {
                 nodeIndex++;
                 length++;
             }
 
             if (length > 0)
-                params.add(new InitGlobalSamplerPartParam(matrixId,
-                        parts.get(partIndex), index, nodeIds, types, weights,
+                params.add(new InitNodeSamplerPartParam(matrixId,
+                        partitions.get(partIndex), index, nodeIds, types, weights,
                         nodeIndex - length - start, nodeIndex - start));
 
             partIndex++;
