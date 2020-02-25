@@ -30,7 +30,6 @@ public class SampleNeighbor extends GetFunc {
         ServerPartition part = matrix.getPartition(partParam.getPartKey().getPartitionId());
         ServerLongAnyRow row = (ServerLongAnyRow) (((RowBasedPartition) part).getRow(0));
         int[] types = param.getTypes();
-        int typeNum = types.length;
         long[] nodeIds = param.getNodeIds();
         Neighbor[] neighbors = new Neighbor[nodeIds.length];
         int count = param.getCount();
@@ -39,50 +38,82 @@ public class SampleNeighbor extends GetFunc {
             long nodeId = nodeIds[i];
 
             // Get node neighbor number
-            Node element = (Node) (row.get(nodeId));
-            if (element == null) {
+            Node node = (Node) (row.get(nodeId));
+            if (node == null) {
                 neighbors[i] = null;
                 continue;
             }
 
-            long[] nodeNeighbors = element.getNeighbors();
-            if (nodeNeighbors == null || nodeNeighbors.length == 0) {
-                neighbors[i] = null;
+            if (types == null || types.length == 0) {
+                neighbors[i] = sampleHomoNeighbor(node, count);
+            } else {
+                neighbors[i] = sampleHeteroNeighbor(node, types, count);
             }
-
-            int[] subTypes = new int[typeNum];
-            float[] subTypeAccSumWeights = new float[typeNum];
-            float subTypeTotalSumWeights = 0;
-            for (int t = 0; t < typeNum; t++) {
-                int type = types[t];
-                subTypes[i] = type;
-                float edgeWeight = type == 0 ? element.getTypeAccSumWeights()[0] :
-                        element.getTypeAccSumWeights()[type] - element.getTypeAccSumWeights()[type - 1];
-                subTypeTotalSumWeights += edgeWeight;
-                subTypeAccSumWeights[i] = subTypeTotalSumWeights;
-            }
-
-            // Neighbors
-            long[] neighborNodeIds = new long[count];
-            float[] neighborWeights = new float[count];
-
-            for (int c = 0; c < count; c++) {
-                // sample edge type
-                int type = subTypes[CompactSampler.randomSelect(subTypeAccSumWeights, 0, typeNum - 1)];
-
-                // sample neighbor
-                int startIndex = type > 0 ? element.getTypeGroupIndices()[type - 1] : 0;
-                int endIndex = element.getTypeGroupIndices()[type];
-                int neighborNodeId = CompactSampler.randomSelect(element.getNodeAccSumWeights(), startIndex, endIndex - 1);
-
-                neighborNodeIds[i] = element.getNeighbors()[neighborNodeId];
-                neighborWeights[i] = element.getWeights()[neighborNodeId];
-            }
-
-            neighbors[i] = new Neighbor(neighborNodeIds, neighborWeights);
         }
 
         return new PartSampleNeighborResult(part.getPartitionKey().getPartitionId(), neighbors);
+    }
+
+    private Neighbor sampleHomoNeighbor(Node node, int count) {
+        long[] nodeNeighbors = node.getNeighbors();
+        if (nodeNeighbors == null || nodeNeighbors.length == 0) {
+            return null;
+        }
+
+        // Neighbors
+        long[] neighborNodeIds = new long[count];
+        float[] neighborWeights = new float[count];
+
+        for (int i = 0; i < count; i++) {
+            // sample neighbor
+            int startIndex = 0;
+            int endIndex = nodeNeighbors.length - 1;
+            int neighborNodeId = CompactSampler.randomSelect(node.getNodeAccSumWeights(), startIndex, endIndex - 1);
+
+            neighborNodeIds[i] = node.getNeighbors()[neighborNodeId];
+            neighborWeights[i] = node.getWeights()[neighborNodeId];
+        }
+
+        return new Neighbor(neighborNodeIds, neighborWeights);
+    }
+
+    private Neighbor sampleHeteroNeighbor(Node node, int[] types, int count) {
+        int typeNum = types.length;
+        long[] nodeNeighbors = node.getNeighbors();
+        if (nodeNeighbors == null || nodeNeighbors.length == 0) {
+            return null;
+        }
+
+        int[] subTypes = new int[typeNum];
+        float[] subTypeAccSumWeights = new float[typeNum];
+        float subTypeTotalSumWeights = 0;
+        for (int i = 0; i < typeNum; i++) {
+            int type = types[i];
+            subTypes[i] = type;
+            float edgeWeight = type == 0 ? node.getTypeAccSumWeights()[0] :
+                    node.getTypeAccSumWeights()[type] - node.getTypeAccSumWeights()[type - 1];
+            subTypeTotalSumWeights += edgeWeight;
+            subTypeAccSumWeights[i] = subTypeTotalSumWeights;
+        }
+
+        // Neighbors
+        long[] neighborNodeIds = new long[count];
+        float[] neighborWeights = new float[count];
+
+        for (int i = 0; i < count; i++) {
+            // sample edge type
+            int type = subTypes[CompactSampler.randomSelect(subTypeAccSumWeights, 0, typeNum - 1)];
+
+            // sample neighbor
+            int startIndex = type > 0 ? node.getTypeGroupIndices()[type - 1] : 0;
+            int endIndex = node.getTypeGroupIndices()[type];
+            int neighborNodeId = CompactSampler.randomSelect(node.getNodeAccSumWeights(), startIndex, endIndex - 1);
+
+            neighborNodeIds[i] = node.getNeighbors()[neighborNodeId];
+            neighborWeights[i] = node.getWeights()[neighborNodeId];
+        }
+
+        return new Neighbor(neighborNodeIds, neighborWeights);
     }
 
     @Override

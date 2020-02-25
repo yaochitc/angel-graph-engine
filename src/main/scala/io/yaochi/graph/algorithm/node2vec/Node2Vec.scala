@@ -21,15 +21,17 @@ class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  def makeGraph(edges: RDD[Edge], model: Node2VecPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = {
+  def makeGraph(edges: RDD[Edge], model: Node2VecPSModel, hasWeight: Boolean): Dataset[_] = {
     // build adj graph partitions
     val adjGraph = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
       .mapPartitionsWithIndex((index, it) =>
-        Iterator.single(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
+        Iterator.single(GraphAdjPartition.apply(index, it, hasType = false, hasWeight)))
 
     adjGraph.persist($(storageLevel))
     adjGraph.foreachPartition(_ => Unit)
     adjGraph.map(_.init(model, $(numBatchInit))).reduce(_ + _)
+
+    model.initNeighborSampler(0, hasWeight)
 
     // build Node2Vec graph partitions
     val node2vecGraph = adjGraph.map(Node2VecPartition(_))
@@ -45,11 +47,10 @@ class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel]
     val start = System.currentTimeMillis()
 
     val columns = edgeDF.columns
-    val hasType = columns.contains("type")
     val hasWeight = columns.contains("weight")
 
     // read edges
-    val edges = makeEdges(edgeDF, hasType, hasWeight)
+    val edges = makeEdges(edgeDF, hasType = false, hasWeight)
 
     edges.persist(StorageLevel.DISK_ONLY)
 
@@ -65,7 +66,7 @@ class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel]
     val psModel = makePSModel(minId, maxId + 1, index, model)
     psModel.initialize()
 
-    val graph = makeGraph(edges, psModel, hasType, hasWeight)
+    val graph = makeGraph(edges, psModel, hasWeight)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")

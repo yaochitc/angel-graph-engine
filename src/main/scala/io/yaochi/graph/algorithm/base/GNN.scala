@@ -30,12 +30,6 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
       .map(_.init(model, $(numBatchInit))).count()
   }
 
-  def makeModel(): Model
-
-  def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Model): PSModel
-
-  def makeGraph(edges: RDD[Edge], model: PSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_]
-
   def makeEdges(edgeDF: DataFrame, hasType: Boolean, hasWeight: Boolean): RDD[Edge] = {
     val edges = (hasType, hasWeight) match {
       case (false, false) =>

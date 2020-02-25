@@ -11,10 +11,12 @@ import java.util.List;
 public class InitNeighborSamplerParam extends UpdateParam {
 
     private int numTypes;
+    private boolean hasWeight;
 
-    public InitNeighborSamplerParam(int matrixId, int numTypes) {
+    public InitNeighborSamplerParam(int matrixId, int numTypes, boolean hasWeight) {
 		super(matrixId);
 		this.numTypes = numTypes;
+		this.hasWeight = hasWeight;
     }
 
     @Override
@@ -24,7 +26,7 @@ public class InitNeighborSamplerParam extends UpdateParam {
 
         int partIndex = 0;
         while (partIndex < parts.size()) {
-            params.add(new InitNeighborSamplerPartParam(matrixId, parts.get(partIndex), numTypes));
+            params.add(new InitNeighborSamplerPartParam(matrixId, parts.get(partIndex), numTypes, hasWeight));
         }
 
         return params;

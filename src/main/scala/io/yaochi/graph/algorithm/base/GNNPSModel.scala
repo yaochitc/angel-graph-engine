@@ -66,8 +66,8 @@ abstract class GNNPSModel(val graph: PSMatrix) extends Serializable {
     graph.psfUpdate(func).get()
   }
 
-  def initNeighborSampler(numTypes: Int): Unit = {
-    val param = new InitNeighborSamplerParam(graph.id, numTypes)
+  def initNeighborSampler(numTypes: Int, hasWeight: Boolean): Unit = {
+    val param = new InitNeighborSamplerParam(graph.id, numTypes, hasWeight)
     val func = new InitNeighborSampler(param)
     graph.psfUpdate(func).get()
   }
