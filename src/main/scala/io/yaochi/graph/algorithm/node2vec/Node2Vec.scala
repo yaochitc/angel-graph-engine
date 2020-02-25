@@ -1,22 +1,45 @@
 package io.yaochi.graph.algorithm.node2vec
 
 import com.tencent.angel.spark.context.PSContext
-import io.yaochi.graph.algorithm.base.{Edge, GNN}
+import io.yaochi.graph.algorithm.base.{Edge, GNN, GraphAdjPartition}
+import io.yaochi.graph.params.HasEmbeddingDim
 import io.yaochi.graph.util.DataLoaderUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Dataset}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.apache.spark.storage.StorageLevel
 
-class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel] {
+class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel]
+  with HasEmbeddingDim {
 
-  def makeModel(): Node2VecModel = ???
+  def makeModel(): Node2VecModel = Node2VecModel()
 
-  def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Node2VecModel): Node2VecPSModel = ???
+  def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Node2VecModel): Node2VecPSModel =  {
+    Node2VecPSModel.apply(minId, maxId, $(embeddingDim), getOptimizer,
+      index, $(psPartitionNum), $(useBalancePartition))
+  }
 
-  def makeGraph(edges: RDD[Edge], model: Node2VecPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = ???
+  def makeGraph(edges: RDD[Edge], model: Node2VecPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = {
+    // build adj graph partitions
+    val adjGraph = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
+      .mapPartitionsWithIndex((index, it) =>
+        Iterator.single(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
+
+    adjGraph.persist($(storageLevel))
+    adjGraph.foreachPartition(_ => Unit)
+    adjGraph.map(_.init(model, $(numBatchInit))).reduce(_ + _)
+
+    // build Node2Vec graph partitions
+    val node2vecGraph = adjGraph.map(Node2VecPartition(_))
+    node2vecGraph.persist($(storageLevel))
+    node2vecGraph.count()
+    adjGraph.unpersist(true)
+
+    implicit val encoder = org.apache.spark.sql.Encoders.kryo[Node2VecPartition]
+    SparkSession.builder().getOrCreate().createDataset(node2vecGraph)
+  }
 
   override def initialize(edgeDF: DataFrame, featureDF: DataFrame): (Node2VecModel, Node2VecPSModel, Dataset[_]) = {
     val start = System.currentTimeMillis()
