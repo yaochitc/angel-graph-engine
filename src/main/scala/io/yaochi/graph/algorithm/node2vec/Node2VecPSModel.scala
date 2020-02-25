@@ -8,12 +8,12 @@ import com.tencent.angel.psagent.PSAgentContext
 import com.tencent.angel.spark.ml.util.LoadBalancePartitioner
 import com.tencent.angel.spark.models.PSMatrix
 import com.tencent.angel.spark.models.impl.PSMatrixImpl
-import io.yaochi.graph.algorithm.base.GNNPSModel
+import io.yaochi.graph.algorithm.base.UnsupervisedGNNPSModel
 import io.yaochi.graph.optim.AsyncOptim
 import org.apache.spark.rdd.RDD
 
 class Node2VecPSModel(graph: PSMatrix,
-                      val embedding: PSMatrix) extends GNNPSModel(graph) {
+                      val embedding: PSMatrix) extends UnsupervisedGNNPSModel(graph) {
 
 }
 

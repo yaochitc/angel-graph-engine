@@ -14,7 +14,7 @@ import java.util.List;
 
 public class SampleNode extends GetFunc {
 
-    public SampleNode(SampleNeighborParam param) {
+    public SampleNode(SampleNodeParam param) {
         super(param);
     }
 

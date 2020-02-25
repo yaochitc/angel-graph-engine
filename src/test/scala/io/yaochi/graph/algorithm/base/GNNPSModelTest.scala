@@ -2,7 +2,9 @@ package io.yaochi.graph.algorithm.base
 
 import com.tencent.angel.conf.AngelConf
 import com.tencent.angel.spark.context.PSContext
+import io.yaochi.graph.algorithm.node2vec.Node2VecPSModel
 import io.yaochi.graph.dataset.CoraDataset
+import io.yaochi.graph.optim.OptimUtils
 import io.yaochi.graph.util.DataLoaderUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
@@ -61,8 +63,9 @@ class GNNPSModelTest {
     val partitionNum = 1
     val numBatchInit = 4
     val storageLevel = StorageLevel.DISK_ONLY
+    val optim = OptimUtils.apply("SGD", 0.01)
 
-    val psModel = GNNPSModel(minId, maxId + 1, index, partitionNum)
+    val psModel = Node2VecPSModel(minId, maxId + 1,16, optim,  index, partitionNum)
     val adj = edges.map(f => (f.src, f)).groupByKey(partitionNum)
 
     val adjGraph = adj.mapPartitionsWithIndex((index, it) =>
