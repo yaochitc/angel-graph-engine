@@ -9,13 +9,13 @@ import com.tencent.angel.psagent.PSAgentContext
 import com.tencent.angel.spark.ml.util.LoadBalancePartitioner
 import com.tencent.angel.spark.models.PSMatrix
 import com.tencent.angel.spark.models.impl.PSMatrixImpl
-import io.yaochi.graph.algorithm.base.UnsupervisedGNNPSModel
+import io.yaochi.graph.algorithm.base.GNNPSModel
 import io.yaochi.graph.optim.AsyncOptim
 import org.apache.spark.rdd.RDD
 
 class Node2VecPSModel(graph: PSMatrix,
                       val embeddingDim: Int,
-                      val embedding: PSMatrix) extends UnsupervisedGNNPSModel(graph) {
+                      val embedding: PSMatrix) extends GNNPSModel(graph) {
   override def initialize(): Unit = {
     embedding.psfUpdate(new XavierUniform(embedding.id, 0, embeddingDim, 1.0,
       embedding.rows, embedding.columns)).get()
@@ -23,8 +23,12 @@ class Node2VecPSModel(graph: PSMatrix,
 }
 
 object Node2VecPSModel {
-  def apply(minId: Long, maxId: Long, embeddingDim: Int, optim: AsyncOptim,
-            index: RDD[Long], psNumPartition: Int,
+  def apply(minId: Long,
+            maxId: Long,
+            embeddingDim: Int,
+            optim: AsyncOptim,
+            index: RDD[Long],
+            psNumPartition: Int,
             useBalancePartition: Boolean = false): Node2VecPSModel = {
     val graph = new MatrixContext("graph", 1, minId, maxId)
     graph.setRowType(RowType.T_ANY_LONGKEY_SPARSE)

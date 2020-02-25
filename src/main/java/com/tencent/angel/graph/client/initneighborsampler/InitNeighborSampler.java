@@ -6,7 +6,6 @@ import com.tencent.angel.ml.matrix.psf.update.base.UpdateFunc;
 import com.tencent.angel.ps.storage.vector.ServerLongAnyRow;
 import com.tencent.angel.ps.storage.vector.element.IElement;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -76,40 +75,40 @@ public class InitNeighborSampler extends UpdateFunc {
             return;
         }
 
-        Int2ObjectMap<LongArrayList> type2Neighbors = new Int2ObjectRBTreeMap<>();
-        Int2ObjectMap<FloatArrayList> type2Weights = null;
+        LongArrayList[] type2Neighbors = new LongArrayList[numTypes];
+        FloatArrayList[] type2Weights = null;
         if (hasWeight) {
-            type2Weights = new Int2ObjectRBTreeMap<>();
+            type2Weights = new FloatArrayList[numTypes];
         }
 
         for (int i = 0; i < types.length; i++) {
-            LongArrayList nodeNeighborList = type2Neighbors.get(types[i]);
+            LongArrayList nodeNeighborList = type2Neighbors[types[i]];
             if (null == nodeNeighborList) {
                 nodeNeighborList = new LongArrayList();
-                type2Neighbors.put(types[i], nodeNeighborList);
+                type2Neighbors[types[i]] = nodeNeighborList;
             }
             nodeNeighborList.add(nodeNeighbors[i]);
 
             if (type2Weights != null) {
-                FloatArrayList nodeWeightList = type2Weights.get(types[i]);
+                FloatArrayList nodeWeightList = type2Weights[types[i]];
                 if (null == nodeWeightList) {
                     nodeWeightList = new FloatArrayList();
-                    type2Weights.put(types[i], nodeWeightList);
+                    type2Weights[types[i]] = nodeWeightList;
                 }
                 nodeWeightList.add(weights[i]);
             }
         }
 
-        float[] typeAccSumWeights = new float[type2Neighbors.size()];
-        int[] typeGroupIndices = new int[type2Neighbors.size()];
+        float[] typeAccSumWeights = new float[type2Neighbors.length];
+        int[] typeGroupIndices = new int[type2Neighbors.length];
         float[] nodeAccSumWeights = new float[nodeNeighbors.length];
 
         int typeIndex = 0;
         int neighborIndex = 0;
         float typeAccSumWeight = 0;
         for (int type = 0; type < numTypes; type++) {
-            LongArrayList nodeNeighborList = type2Neighbors.get(type);
-            FloatArrayList nodeWeightList = null != type2Weights? type2Weights.get(type) : null;
+            LongArrayList nodeNeighborList = type2Neighbors[type];
+            FloatArrayList nodeWeightList = null != type2Weights? type2Weights[type] : null;
             int numNeighbor = null != nodeNeighborList ? nodeNeighborList.size() : 0;
 
             float curTypeAccSumWeight = typeAccSumWeight;

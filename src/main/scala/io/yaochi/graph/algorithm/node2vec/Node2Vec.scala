@@ -1,14 +1,14 @@
 package io.yaochi.graph.algorithm.node2vec
 
 import com.tencent.angel.spark.context.PSContext
-import io.yaochi.graph.algorithm.base.{Edge, GNN, GraphAdjPartition}
+import io.yaochi.graph.algorithm.base.{Edge, GNN, GraphAdjPartition, Node}
 import io.yaochi.graph.params.HasEmbeddingDim
 import io.yaochi.graph.util.DataLoaderUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.apache.spark.storage.StorageLevel
 
 class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel]

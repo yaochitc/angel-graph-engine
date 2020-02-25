@@ -7,7 +7,7 @@ import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Dataset, Row}
+import org.apache.spark.sql.{DataFrame, Dataset}
 
 abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) extends Serializable
   with HasBatchSize with HasFeatureDim with HasOptimizer
@@ -19,10 +19,9 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
 
   override def copy(extra: ParamMap): Transformer = defaultCopy(extra)
 
-  def initFeatures(model: PSModel, features: Dataset[Row], minId: Long, maxId: Long): Unit = {
-    features.rdd.filter(row => row.length > 0)
-      .filter(row => row.get(0) != null)
-      .map(row => (row.getLong(0), row.getString(1)))
+  def initFeatures(model: PSModel, features: DataFrame, minId: Long, maxId: Long): Unit = {
+    features.select("id", "feature")
+      .rdd.map(row => (row.getLong(0), row.getString(1)))
       .filter(f => f._1 >= minId && f._1 <= maxId)
       .map(f => (f._1, SampleParser.parseFeature(f._2, $(featureDim), $(dataFormat))))
       .mapPartitionsWithIndex((index, it) =>
@@ -36,16 +35,35 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
         edgeDF.select("src", "dst").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), None, None))
       case (true, false) =>
-        edgeDF.select("src", "dst", "weight").rdd
+        edgeDF.select("src", "dst", "type").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
       case (false, true) =>
-        edgeDF.select("src", "dst", "type").rdd
+        edgeDF.select("src", "dst", "weight").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), None, Some(row.getFloat(2))))
       case (true, true) =>
-        edgeDF.select("src", "dst", "weight", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getLong(1))))
+        edgeDF.select("src", "dst", "type", "weight").rdd
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getFloat(1))))
     }
     edges.filter(f => f.src != f.dst)
+  }
+
+  def makeGlobalNodeModel(featureDF: DataFrame, minId: Long, maxId: Long, hasType: Boolean, hasWeight: Boolean): GNNNodeSamplerModel = {
+    val nodes = (hasType, hasWeight) match {
+      case (false, false) =>
+        featureDF.select("id").rdd
+          .map(row => Node(row.getLong(0),  None, None))
+      case (true, false) =>
+        featureDF.select("id", "weight").rdd
+          .map(row => Node(row.getLong(0),  Some(row.getInt(1)), None))
+      case (false, true) =>
+        featureDF.select("id", "type").rdd
+          .map(row => Node(row.getLong(0), None, Some(row.getFloat(1))))
+      case (true, true) =>
+        featureDF.select("id", "type",  "weight").rdd
+          .map(row => Node(row.getLong(0),  Some(row.getInt(1)), Some(row.getFloat(2))))
+    }
+
+    GNNNodeSamplerModel(minId, maxId, nodes, hasType, hasWeight)
   }
 
   def initialize(edgeDF: DataFrame,
