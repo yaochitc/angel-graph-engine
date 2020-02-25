@@ -3,6 +3,7 @@ package io.yaochi.graph.algorithm.base
 import com.tencent.angel.spark.ml.graph.params._
 import io.yaochi.graph.data.SampleParser
 import io.yaochi.graph.params._
+import io.yaochi.graph.spark.RangePartitioner
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
@@ -24,8 +25,8 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
       .rdd.map(row => (row.getLong(0), row.getString(1)))
       .filter(f => f._1 >= minId && f._1 <= maxId)
       .map(f => (f._1, SampleParser.parseFeature(f._2, $(featureDim), $(dataFormat))))
-      .mapPartitionsWithIndex((index, it) =>
-        Iterator(NodeFeaturePartition.apply(index, it)))
+      .mapPartitionsWithIndex((_, it) =>
+        Iterator(NodeFeaturePartition.apply(it)))
       .map(_.init(model, $(numBatchInit))).count()
   }
 
@@ -47,23 +48,33 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
     edges.filter(f => f.src != f.dst)
   }
 
-  def makeGlobalNodeModel(featureDF: DataFrame, minId: Long, maxId: Long, hasType: Boolean, hasWeight: Boolean): GNNNodeSamplerModel = {
+  def makeGlobalNodeModel(featureDF: DataFrame, minId: Long, maxId: Long, hasType: Boolean, hasWeight: Boolean, numTypes: Int): GNNNodeSamplerModel = {
     val nodes = (hasType, hasWeight) match {
       case (false, false) =>
         featureDF.select("id").rdd
-          .map(row => Node(row.getLong(0),  None, None))
+          .map(row => Node(row.getLong(0), None, None))
       case (true, false) =>
         featureDF.select("id", "weight").rdd
-          .map(row => Node(row.getLong(0),  Some(row.getInt(1)), None))
+          .map(row => Node(row.getLong(0), Some(row.getInt(1)), None))
       case (false, true) =>
         featureDF.select("id", "type").rdd
           .map(row => Node(row.getLong(0), None, Some(row.getFloat(1))))
       case (true, true) =>
-        featureDF.select("id", "type",  "weight").rdd
-          .map(row => Node(row.getLong(0),  Some(row.getInt(1)), Some(row.getFloat(2))))
+        featureDF.select("id", "type", "weight").rdd
+          .map(row => Node(row.getLong(0), Some(row.getInt(1)), Some(row.getFloat(2))))
     }
 
-    GNNNodeSamplerModel(minId, maxId, nodes, hasType, hasWeight)
+    val index = nodes.map(_.id)
+    val nodeSamplerModel = GNNNodeSamplerModel(minId, maxId, index, hasType, hasWeight, numTypes, $(psPartitionNum))
+
+    val partitonedNodes = nodes.map(node => (node.id, node))
+      .partitionBy(RangePartitioner(nodeSamplerModel.matrix.id))
+      .map(_._2)
+
+    partitonedNodes.persist($(storageLevel))
+    partitonedNodes.foreachPartition(_ => Unit)
+
+    nodeSamplerModel
   }
 
   def initialize(edgeDF: DataFrame,

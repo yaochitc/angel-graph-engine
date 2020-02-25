@@ -10,7 +10,7 @@ import com.tencent.angel.spark.models.PSMatrix
 import com.tencent.angel.spark.models.impl.PSMatrixImpl
 import org.apache.spark.rdd.RDD
 
-class GNNNodeSamplerModel(matrix: PSMatrix) {
+class GNNNodeSamplerModel(val matrix: PSMatrix) {
   def initNodeSampler(nodeIds: Array[Long],
                       types: Array[Int],
                       weights: Array[Float],
@@ -46,7 +46,7 @@ class GNNNodeSamplerModel(matrix: PSMatrix) {
 object GNNNodeSamplerModel {
   def apply(minId: Long,
             maxId: Long,
-            nodes: RDD[Node],
+            index: RDD[Long],
             hasType: Boolean,
             hasWeight: Boolean,
             numTypes: Int,
@@ -55,8 +55,6 @@ object GNNNodeSamplerModel {
     val matrix = new MatrixContext("nodeSampler", 1, minId, maxId)
     matrix.setRowType(RowType.T_ANY_LONGKEY_SPARSE)
     matrix.setValueType(classOf[NodeSample])
-
-    val index = nodes.map(_.id)
 
     if (useBalancePartition)
       LoadBalancePartitioner.partition(index, maxId, psNumPartition, matrix)
